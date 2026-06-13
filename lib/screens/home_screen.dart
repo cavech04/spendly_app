@@ -1,48 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/expense.dart';
+import '../providers/expense_provider.dart';
 import 'add_expense_screen.dart';
 import 'expense_list_screen.dart';
 import 'settings_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  // Mock data for now, will be replaced by API data
-  final List<Expense> _expenses = [
-    Expense(
-      id: '1',
-      title: 'Groceries',
-      amount: 42.50,
-      category: 'Food',
-      date: DateTime.now().subtract(const Duration(days: 1)),
-    ),
-    Expense(
-      id: '2',
-      title: 'Bus ticket',
-      amount: 2.80,
-      category: 'Transport',
-      date: DateTime.now().subtract(const Duration(days: 2)),
-    ),
-    Expense(
-      id: '3',
-      title: 'Coffee',
-      amount: 3.20,
-      category: 'Food',
-      date: DateTime.now(),
-    ),
-  ];
-
-  double get _totalThisMonth =>
-      _expenses.fold(0, (sum, e) => sum + e.amount);
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final expenses = ref.watch(expenseProvider);
+    final total = ref.read(expenseProvider.notifier).totalThisMonth;
     final currencyFormat = NumberFormat.currency(symbol: '\$');
 
     return Scaffold(
@@ -80,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      currencyFormat.format(_totalThisMonth),
+                      currencyFormat.format(total),
                       style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -101,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => ExpenseListScreen(expenses: _expenses),
+                        builder: (_) => ExpenseListScreen(expenses: expenses),
                       ),
                     );
                   },
@@ -110,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            if (_expenses.isEmpty)
+            if (expenses.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 32),
                 child: Center(
@@ -121,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               )
             else
-              ..._expenses.take(5).map((expense) => Card(
+              ...expenses.take(5).map((expense) => Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
                       leading: CircleAvatar(
@@ -146,9 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
             MaterialPageRoute(builder: (_) => const AddExpenseScreen()),
           );
           if (newExpense != null) {
-            setState(() {
-              _expenses.insert(0, newExpense);
-            });
+            ref.read(expenseProvider.notifier).addExpense(newExpense);
           }
         },
         child: const Icon(Icons.add),
