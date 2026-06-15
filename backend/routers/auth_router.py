@@ -47,3 +47,12 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 @router.get("/me", response_model=schemas.UserOut)
 def get_me(current_user: User = Depends(auth.get_current_user)):
     return current_user
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+def delete_account(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(auth.get_current_user),
+):
+    db.delete(current_user)
+    db.commit()
+    return None

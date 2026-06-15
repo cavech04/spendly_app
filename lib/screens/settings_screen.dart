@@ -47,7 +47,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (confirmed == true) {
-      // TODO: call API to delete account
+if (confirmed == true) {
+  try {
+    await _api.deleteAccount();
+  } on ApiException catch (e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.message)),
+    );
+    return;
+  }
+  if (!mounted) return;
+  Navigator.of(context).pushAndRemoveUntil(
+    MaterialPageRoute(builder: (_) => const LoginScreen()),
+    (route) => false,
+  );
+}
+
       if (!mounted) return;
       await _logout();
     }
