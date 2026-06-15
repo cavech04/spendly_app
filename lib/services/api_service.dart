@@ -92,6 +92,21 @@ class ApiService {
     await clearToken();
   }
 
+  Future<void> deleteAccount() async {
+  final response = await http
+      .delete(
+        Uri.parse('$baseUrl/auth/me'),
+        headers: await _authHeaders(),
+      )
+      .timeout(const Duration(seconds: 10));
+
+  if (response.statusCode != 204) {
+    throw ApiException('Failed to delete account');
+  }
+
+  await clearToken();
+}
+
   // ---------- Expenses ----------
 
   Future<List<Expense>> getExpenses() async {
