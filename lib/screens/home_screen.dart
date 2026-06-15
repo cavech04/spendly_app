@@ -12,8 +12,7 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final expenses = ref.watch(expenseProvider);
-    final total = ref.read(expenseProvider.notifier).totalThisMonth;
+    final expensesAsync = ref.watch(expenseProvider);
     final currencyFormat = NumberFormat.currency(symbol: '\$');
 
     return Scaffold(
@@ -30,85 +29,109 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          // TODO: refresh from API
-          await Future.delayed(const Duration(milliseconds: 500));
-        },
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Card(
-              color: Theme.of(context).colorScheme.primaryContainer,
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'This Month',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      currencyFormat.format(total),
-                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                  ],
-                ),
+      body: expensesAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(
+                error.toString(),
+                textAlign: TextAlign.center,
               ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Recent Expenses',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => ExpenseListScreen(expenses: expenses),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () =>
+                    ref.read(expenseProvider.notifier).refresh(),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+        data: (expenses) => RefreshIndicator(
+          onRefresh: () => ref.read(expenseProvider.notifier).refresh(),
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Card(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'This Month',
+                        style: Theme.of(context).textTheme.titleMedium,
                       ),
-                    );
-                  },
-                  child: const Text('See all'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            if (expenses.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 32),
-                child: Center(
-                  child: Text(
-                    'No expenses yet.\nTap + to add your first one.',
-                    textAlign: TextAlign.center,
+                      const SizedBox(height: 8),
+                      Text(
+                        currencyFormat.format(
+                          ref.read(expenseProvider.notifier).totalThisMonth,
+                        ),
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineLarge
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
                 ),
-              )
-            else
-              ...expenses.take(5).map((expense) => Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        child: Text(expense.category[0]),
-                      ),
-                      title: Text(expense.title),
-                      subtitle: Text(
-                        '${expense.category} · ${DateFormat.yMMMd().format(expense.date)}',
-                      ),
-                      trailing: Text(
-                        currencyFormat.format(expense.amount),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Recent Expenses',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              ExpenseListScreen(expenses: expenses),
+                        ),
+                      );
+                    },
+                    child: const Text('See all'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              if (expenses.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 32),
+                  child: Center(
+                    child: Text(
+                      'No expenses yet.\nTap + to add your first one.',
+                      textAlign: TextAlign.center,
                     ),
-                  )),
-          ],
+                  ),
+                )
+              else
+                ...expenses.take(5).map((expense) => Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          child: Text(expense.category[0]),
+                        ),
+                        title: Text(expense.title),
+                        subtitle: Text(
+                          '${expense.category} · ${DateFormat.yMMMd().format(expense.date)}',
+                        ),
+                        trailing: Text(
+                          currencyFormat.format(expense.amount),
+                          style:
+                              const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    )),
+            ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -117,7 +140,15 @@ class HomeScreen extends ConsumerWidget {
             MaterialPageRoute(builder: (_) => const AddExpenseScreen()),
           );
           if (newExpense != null) {
-            ref.read(expenseProvider.notifier).addExpense(newExpense);
+            if (context.mounted) {
+              ref.read(expenseProvider.notifier).addExpense(
+                    title: newExpense.title,
+                    amount: newExpense.amount,
+                    category: newExpense.category,
+                    date: newExpense.date,
+                    note: newExpense.note,
+                  );
+            }
           }
         },
         child: const Icon(Icons.add),

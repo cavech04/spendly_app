@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 import 'login_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -9,16 +10,13 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  final _api = ApiService();
   bool _isLoading = false;
 
   Future<void> _logout() async {
     setState(() => _isLoading = true);
-
-    // TODO: clear stored auth token
-    await Future.delayed(const Duration(milliseconds: 300));
-
+    await _api.logout();
     if (!mounted) return;
-
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (route) => false,
@@ -49,9 +47,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (confirmed == true) {
-      // TODO: call API to delete account and data
+      // TODO: call API to delete account
       if (!mounted) return;
-      _logout();
+      await _logout();
     }
   }
 
