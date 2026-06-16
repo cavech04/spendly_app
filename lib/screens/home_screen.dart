@@ -134,25 +134,29 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final newExpense = await Navigator.of(context).push<Expense>(
-            MaterialPageRoute(builder: (_) => const AddExpenseScreen()),
-          );
-          if (newExpense != null) {
-            if (context.mounted) {
-              ref.read(expenseProvider.notifier).addExpense(
-                    title: newExpense.title,
-                    amount: newExpense.amount,
-                    category: newExpense.category,
-                    date: newExpense.date,
-                    note: newExpense.note,
-                  );
-            }
-          }
-        },
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: Semantics(
+  label: 'Add new expense',
+  button: true,
+  child: FloatingActionButton(
+    onPressed: () async {
+      final newExpense = await Navigator.of(context).push<Expense>(
+        MaterialPageRoute(builder: (_) => const AddExpenseScreen()),
+      );
+      if (newExpense != null) {
+        if (context.mounted) {
+          ref.read(expenseProvider.notifier).addExpense(
+                title: newExpense.title,
+                amount: newExpense.amount,
+                category: newExpense.category,
+                date: newExpense.date,
+                note: newExpense.note,
+              );
+        }
+      }
+    },
+    child: const Icon(Icons.add, semanticLabel: 'Add expense'),
+  ),
+),
     );
   }
 }
