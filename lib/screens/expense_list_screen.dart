@@ -61,6 +61,13 @@ class _CategoryFilterState extends State<_CategoryFilter> {
     return cats;
   }
 
+  List<Expense> get _filteredExpenses {
+    if (_selectedCategory == null) return widget.expenses;
+    return widget.expenses
+        .where((e) => e.category == _selectedCategory)
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView(
@@ -105,7 +112,9 @@ class _ExpenseList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (expenses.isEmpty) {
-      return const Center(child: Text('No expenses in this category.'));
+      return const Center(
+        child: Text('No expenses in this category.'),
+      );
     }
 
     return ListView.builder(
@@ -113,39 +122,49 @@ class _ExpenseList extends StatelessWidget {
       itemCount: expenses.length,
       itemBuilder: (context, index) {
         final expense = expenses[index];
-        return Dismissible(
-          key: Key(expense.id),
-          direction: DismissDirection.endToStart,
-          background: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 20),
-            color: Colors.red,
-            child: const Icon(Icons.delete, color: Colors.white),
-          ),
-          onDismissed: (_) {
-            onDelete(expense.id);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('${expense.title} deleted'),
-                duration: const Duration(seconds: 2),
+        return Semantics(
+          label: 'Expense: ${expense.title}, '
+              '${currencyFormat.format(expense.amount)}, '
+              '${expense.category}. Swipe left to delete.',
+          child: Dismissible(
+            key: Key(expense.id),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              color: Colors.red,
+              child: const Icon(
+                Icons.delete,
+                color: Colors.white,
+                semanticLabel: 'Delete',
               ),
-            );
-          },
-          child: Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              leading: CircleAvatar(
-                child: Text(expense.category[0]),
-              ),
-              title: Text(expense.title),
-              subtitle: Text(
-                '${expense.category} · ${DateFormat.yMMMd().format(expense.date)}'
-                '${expense.note != null ? '\n${expense.note}' : ''}',
-              ),
-              isThreeLine: expense.note != null,
-              trailing: Text(
-                currencyFormat.format(expense.amount),
-                style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            onDismissed: (_) {
+              onDelete(expense.id);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${expense.title} deleted'),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+            child: Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: ListTile(
+                minVerticalPadding: 12,
+                leading: CircleAvatar(
+                  child: Text(expense.category[0]),
+                ),
+                title: Text(expense.title),
+                subtitle: Text(
+                  '${expense.category} · ${DateFormat.yMMMd().format(expense.date)}'
+                  '${expense.note != null ? '\n${expense.note}' : ''}',
+                ),
+                isThreeLine: expense.note != null,
+                trailing: Text(
+                  currencyFormat.format(expense.amount),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           ),
