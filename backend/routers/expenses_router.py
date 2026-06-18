@@ -39,6 +39,32 @@ def create_expense(
     return new_expense
 
 
+@router.put("/{expense_id}", response_model=schemas.ExpenseOut)
+def update_expense(
+    expense_id: int,
+    expense: schemas.ExpenseCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(auth.get_current_user),
+):
+    db_expense = (
+        db.query(Expense)
+        .filter(Expense.id == expense_id, Expense.owner_id == current_user.id)
+        .first()
+    )
+    if not db_expense:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Expense not found",
+        )
+
+    for key, value in expense.model_dump().items():
+        setattr(db_expense, key, value)
+
+    db.commit()
+    db.refresh(db_expense)
+    return db_expense
+
+
 @router.delete("/{expense_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_expense(
     expense_id: int,
@@ -51,7 +77,10 @@ def delete_expense(
         .first()
     )
     if not expense:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Expense not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Expense not found",
+        )
 
     db.delete(expense)
     db.commit()

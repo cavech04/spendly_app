@@ -30,6 +30,27 @@ class ExpenseNotifier extends AsyncNotifier<List<Expense>> {
     state = AsyncData([newExpense, ...state.value ?? []]);
   }
 
+  Future<void> updateExpense({
+    required String id,
+    required String title,
+    required double amount,
+    required String category,
+    required DateTime date,
+    String? note,
+  }) async {
+    final updated = await _api.updateExpense(
+      id: id,
+      title: title,
+      amount: amount,
+      category: category,
+      date: date,
+      note: note,
+    );
+    state = AsyncData(
+      (state.value ?? []).map((e) => e.id == id ? updated : e).toList(),
+    );
+  }
+
   Future<void> deleteExpense(String id) async {
     await _api.deleteExpense(id);
     state = AsyncData(
