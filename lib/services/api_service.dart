@@ -12,8 +12,6 @@ class ApiException implements Exception {
 }
 
 class ApiService {
-  // 10.0.2.2 is the special alias to reach the host machine's localhost
-  // from the Android emulator.
   static const String baseUrl = 'http://172.20.10.5:8000';
 
   static const _storage = FlutterSecureStorage();
@@ -93,19 +91,19 @@ class ApiService {
   }
 
   Future<void> deleteAccount() async {
-  final response = await http
-      .delete(
-        Uri.parse('$baseUrl/auth/me'),
-        headers: await _authHeaders(),
-      )
-      .timeout(const Duration(seconds: 10));
+    final response = await http
+        .delete(
+          Uri.parse('$baseUrl/auth/me'),
+          headers: await _authHeaders(),
+        )
+        .timeout(const Duration(seconds: 10));
 
-  if (response.statusCode != 204) {
-    throw ApiException('Failed to delete account');
+    if (response.statusCode != 204) {
+      throw ApiException('Failed to delete account');
+    }
+
+    await clearToken();
   }
-
-  await clearToken();
-}
 
   // ---------- Expenses ----------
 
@@ -148,6 +146,35 @@ class ApiService {
 
     if (response.statusCode != 201) {
       throw ApiException('Failed to add expense');
+    }
+
+    return Expense.fromJson(jsonDecode(response.body));
+  }
+
+  Future<Expense> updateExpense({
+    required String id,
+    required String title,
+    required double amount,
+    required String category,
+    required DateTime date,
+    String? note,
+  }) async {
+    final response = await http
+        .put(
+          Uri.parse('$baseUrl/expenses/$id'),
+          headers: await _authHeaders(),
+          body: jsonEncode({
+            'title': title,
+            'amount': amount,
+            'category': category,
+            'date': date.toIso8601String(),
+            'note': note,
+          }),
+        )
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode != 200) {
+      throw ApiException('Failed to update expense');
     }
 
     return Expense.fromJson(jsonDecode(response.body));
